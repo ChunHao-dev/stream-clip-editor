@@ -1,0 +1,13 @@
+[project]
+name = "stream-clip-editor"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi==0.115.12",
+    "uvicorn[standard]==0.34.2",
+    "websockets==15.0.1",
+    "numpy==2.2.6",
+]
+
+[tool.uv]
+dev-dependencies = []

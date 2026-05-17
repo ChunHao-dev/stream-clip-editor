@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head><title>Stream Test</title></head>
+<body style="background:#111;display:flex;justify-content:center;align-items:center;height:100vh;margin:0">
+  <video id="v" controls autoplay muted style="max-width:90%;max-height:90%"></video>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script>
+    const video = document.getElementById('v');
+    if (Hls.isSupported()) {
+      const hls = new Hls({ liveSyncDurationCount: 3 });
+      hls.loadSource('/hls/stream.m3u8');
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+    } else {
+      video.src = '/hls/stream.m3u8';
+    }
+  </script>
+</body>
+</html>
