@@ -96,38 +96,41 @@ def _check_keywords(transcript_text: str) -> list[str]:
     return found
 
 
-async def analyze_chunk(audio_path: str, offset: float, transcript_text: str) -> None:
+HIGHLIGHT_PADDING = 5  # seconds before and after keyword
+
+
+async def analyze_chunk(audio_path: str, offset: float, transcript_text: str, segments: list[dict]) -> None:
     """Analyze a chunk for highlights and broadcast if found."""
     loop = asyncio.get_event_loop()
     volume = await loop.run_in_executor(None, _analyze_volume, audio_path)
-    keywords = _check_keywords(transcript_text)
 
-    logger.info(f"Chunk @ {offset}s | spike={volume['spike']} (peak={volume['peak']:.4f}, avg={volume['avg']:.4f}) | keywords={keywords or 'none'}")
+    # Check each segment for keywords with precise timing
+    for seg in segments:
+        keywords = _check_keywords(seg["text"])
+        if not keywords and not volume["spike"]:
+            continue
+        if not keywords:
+            continue  # volume spike alone not enough for now
 
-    if not volume["spike"] and not keywords:
-        return
+        # Use segment's precise time (already includes offset from transcribe.py)
+        seg_mid = (seg["start"] + seg["end"]) / 2
+        start = round(max(0, seg_mid - HIGHLIGHT_PADDING), 2)
+        end = round(seg_mid + HIGHLIGHT_PADDING, 2)
 
-    logger.info(f"Highlight detected @ offset={offset}s | volume_spike={volume['spike']} | keywords={keywords}")
+        if volume["spike"] and keywords:
+            confidence = "high"
+            reason = f"Volume spike + keywords: {', '.join(keywords)}"
+        else:
+            confidence = "low"
+            reason = f"Keywords: {', '.join(keywords)}"
 
-    # Determine confidence
-    if volume["spike"] and keywords:
-        confidence = "high"
-        reason = f"Volume spike + keywords: {', '.join(keywords)}"
-    elif volume["spike"]:
-        confidence = "low"
-        reason = "Volume spike (possible cheering)"
-    else:
-        confidence = "low"
-        reason = f"Keywords: {', '.join(keywords)}"
+        logger.info(f"Highlight @ {seg['start']:.1f}-{seg['end']:.1f}s | keywords={keywords} | clip={start}-{end}s")
 
-    # Find boundaries
-    boundaries = await loop.run_in_executor(None, _find_boundaries, audio_path, volume["spike"])
-
-    event = {
-        "type": "highlight",
-        "start": round(offset + boundaries[0], 2),
-        "end": round(offset + boundaries[1], 2),
-        "confidence": confidence,
-        "reason": reason,
-    }
-    await broadcast(event)
+        event = {
+            "type": "highlight",
+            "start": start,
+            "end": end,
+            "confidence": confidence,
+            "reason": reason,
+        }
+        await broadcast(event)

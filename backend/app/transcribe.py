@@ -99,7 +99,7 @@ async def transcription_loop():
             await broadcast(result)
             # Run highlight detection on same chunk
             from .highlights import analyze_chunk
-            await analyze_chunk(str(chunk_path), offset, result["text"])
+            await analyze_chunk(str(chunk_path), offset, result["text"], result["segments"])
 
         # chunk_path.unlink(missing_ok=True)  # keep for debugging
         chunk_index += 1

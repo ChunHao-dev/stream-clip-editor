@@ -22,9 +22,11 @@ RECORD_DIR.mkdir(exist_ok=True)
 
 # WebSocket connection manager
 clients: Set[WebSocket] = set()
+history: list[dict] = []
 
 
 async def broadcast(event: dict):
+    history.append(event)
     msg = json.dumps(event)
     for ws in list(clients):
         try:
@@ -36,6 +38,9 @@ async def broadcast(event: dict):
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
     await ws.accept()
+    # Send history to new client
+    for event in history:
+        await ws.send_text(json.dumps(event))
     clients.add(ws)
     try:
         while True:

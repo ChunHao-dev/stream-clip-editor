@@ -36,6 +36,11 @@ function App() {
       const data = JSON.parse(e.data)
       if (data.type === 'transcript') {
         setSegments((prev) => [...prev, ...data.segments])
+        // Use latest segment end time as current stream time
+        if (data.segments.length > 0) {
+          const lastSeg = data.segments[data.segments.length - 1]
+          setCurrentTime(lastSeg.end)
+        }
       } else if (data.type === 'highlight') {
         setHighlights((prev) => [...prev, data])
       }
@@ -115,8 +120,8 @@ function App() {
             <Player
               ref={playerRef}
               src="/hls/stream.m3u8"
-              onTimeUpdate={setCurrentTime}
-              onDuration={setDuration}
+              onTimeUpdate={() => {}}
+              onDuration={() => {}}
             />
           )}
           <Timeline
@@ -150,18 +155,20 @@ function App() {
           </div>
         </div>
         {/* Right: Highlights + Transcript */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, height: 'calc(100vh - 80px)' }}>
           <HighlightList
             highlights={highlights}
             onSelect={handleHighlightSelect}
             onBackToLive={handleBackToLive}
             isLive={isLive}
           />
-          <Transcript
-            segments={segments}
-            currentTime={currentTime}
-            onSegmentClick={(s) => handleSeek(s.start)}
-          />
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <Transcript
+              segments={segments}
+              currentTime={currentTime}
+              onSegmentClick={(s) => handleSeek(s.start)}
+            />
+          </div>
         </div>
       </div>
     </div>

@@ -21,7 +21,7 @@ export function Transcript({ segments, currentTime, onSegmentClick }: Props) {
       border: '1px solid rgba(255,255,255,0.08)',
       borderRadius: 10,
       padding: 16,
-      height: 'calc(100vh - 80px)',
+      height: '100%',
       overflowY: 'auto',
     }}>
       <h2 style={{ fontSize: 14, margin: '0 0 12px', color: '#888' }}>Transcript</h2>
