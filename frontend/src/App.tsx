@@ -31,21 +31,30 @@ function App() {
   const playerRef = useRef<{ seek: (t: number) => void; seekToLive: () => void }>(null)
 
   useEffect(() => {
-    const ws = new WebSocket(`ws://${window.location.hostname}:8000/ws`)
-    ws.onmessage = (e) => {
-      const data = JSON.parse(e.data)
-      if (data.type === 'transcript') {
-        setSegments((prev) => [...prev, ...data.segments])
-        // Use latest segment end time as current stream time
-        if (data.segments.length > 0) {
-          const lastSeg = data.segments[data.segments.length - 1]
-          setCurrentTime(lastSeg.end)
+    let ws: WebSocket
+    let reconnectTimer: ReturnType<typeof setTimeout>
+
+    function connect() {
+      ws = new WebSocket(`ws://${window.location.hostname}:8000/ws`)
+      ws.onmessage = (e) => {
+        const data = JSON.parse(e.data)
+        if (data.type === 'transcript') {
+          setSegments((prev) => [...prev, ...data.segments])
+          if (data.segments.length > 0) {
+            const lastSeg = data.segments[data.segments.length - 1]
+            setCurrentTime(lastSeg.end)
+          }
+        } else if (data.type === 'highlight') {
+          setHighlights((prev) => [...prev, data])
         }
-      } else if (data.type === 'highlight') {
-        setHighlights((prev) => [...prev, data])
+      }
+      ws.onclose = () => {
+        reconnectTimer = setTimeout(connect, 2000)
       }
     }
-    return () => ws.close()
+
+    connect()
+    return () => { ws?.close(); clearTimeout(reconnectTimer) }
   }, [])
 
   const handleSeek = (time: number) => {

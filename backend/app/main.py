@@ -6,6 +6,9 @@ import uuid
 from pathlib import Path
 from typing import Set
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -62,16 +65,18 @@ async def create_clip(req: ClipRequest):
 
     clip_id = str(uuid.uuid4())[:8]
     output = MEDIA_DIR / f"{clip_id}.mp4"
-    recording = RECORD_DIR / "stream.mp4"
+    recording = RECORD_DIR / "stream.flv"
 
     if not recording.exists():
         return {"error": "No recording available"}, 404
 
     duration = req.end - req.start
     cmd = [
-        "ffmpeg", "-y", "-ss", str(req.start), "-i", str(recording),
-        "-t", str(duration), "-c:v", "libx264", "-preset", "ultrafast",
-        "-c:a", "aac", "-movflags", "+faststart",
+        "ffmpeg", "-y", "-ss", str(req.start),
+        "-i", str(recording),
+        "-t", str(duration),
+        "-c:v", "libx264", "-preset", "ultrafast",
+        "-c:a", "aac",
         str(output)
     ]
     proc = await asyncio.create_subprocess_exec(
@@ -101,10 +106,13 @@ recording_start_time: float = 0
 async def start_recording():
     global recording_process, recording_start_time
     RECORD_DIR.mkdir(exist_ok=True)
-    output = RECORD_DIR / "stream.mp4"
+    await asyncio.sleep(5)  # Wait for stream to have video ready
+    output = RECORD_DIR / "stream.flv"
     cmd = [
-        "ffmpeg", "-y", "-i", "rtmp://localhost:1935/live/stream",
-        "-c", "copy", "-movflags", "+frag_keyframe+empty_moov",
+        "ffmpeg", "-y",
+        "-analyzeduration", "5000000", "-probesize", "5000000",
+        "-i", "rtmp://localhost:1935/live/stream",
+        "-c", "copy",
         str(output)
     ]
     recording_process = await asyncio.create_subprocess_exec(

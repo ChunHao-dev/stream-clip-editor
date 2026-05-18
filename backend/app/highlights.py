@@ -117,6 +117,13 @@ async def analyze_chunk(audio_path: str, offset: float, transcript_text: str, se
         start = round(max(0, seg_mid - HIGHLIGHT_PADDING), 2)
         end = round(seg_mid + HIGHLIGHT_PADDING, 2)
 
+        # Validate with LLM if this is a live event
+        from .llm import validate_highlight
+        is_live = await validate_highlight(seg["text"], keywords)
+        if not is_live:
+            logger.info(f"  → Filtered out (not live event)")
+            continue
+
         if volume["spike"] and keywords:
             confidence = "high"
             reason = f"Volume spike + keywords: {', '.join(keywords)}"

@@ -6,3 +6,5 @@ dist/
 media/
 /tmp/
 .DS_Store
+.env
+*.wav
