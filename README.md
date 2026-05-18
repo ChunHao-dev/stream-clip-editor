@@ -2,6 +2,10 @@
 
 Real-time stream clip editor with AI-powered highlight detection. Automatically identifies key moments in live sports broadcasts using speech transcription and LLM validation, then allows instant clip extraction.
 
+## Demo
+
+[![Demo Video](https://img.youtube.com/vi/CRi36K2KRGs/maxresdefault.jpg)](https://youtu.be/CRi36K2KRGs)
+
 ## Architecture
 
 ```
